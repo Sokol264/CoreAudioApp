@@ -62,11 +62,11 @@ private extension ViewController {
             }
             .store(in: &subscriptions)
         
-        viewModel.$isPlaying
-            .sink { [weak self] isPlaying in
-                self?.playButtonImage(for: isPlaying)
-            }
-            .store(in: &subscriptions)
+//        viewModel.$isPlaying
+//            .sink { [weak self] isPlaying in
+//                self?.playButtonImage(for: isPlaying)
+//            }
+//            .store(in: &subscriptions)
     }
 }
 

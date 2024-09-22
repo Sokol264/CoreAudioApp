@@ -10,14 +10,15 @@ import CoreAudioKit
 class AudioPlayer {
     @Published var isPlaying = false
 
-    private var audioQueue: AudioQueueRef?
-    private var audioQueueBuffers: [AudioQueueBufferRef?] = [nil, nil, nil, nil]
-    private var audioFile: AudioFileID?
     private let fileURL: URL = {
         let fileManager = FileManager.default
         let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
         return documentsDirectory.appendingPathComponent("recordedAudio.caf")
     }()
+
+    private var audioQueue: AudioQueueRef?
+    private var audioQueueBuffers: [AudioQueueBufferRef?] = [nil, nil, nil]
+    private var audioFile: AudioFileID?
 
     private var bufferSize: UInt32 = 1024
     private var packetToRead: UInt32 = 0
@@ -124,8 +125,6 @@ class AudioPlayer {
         if isPlaying { return }
         isPlaying = true
         setupAudioQueue()
-        currentPacket = 0 // Reset offset
-        audioQueueBuffers = [nil, nil, nil, nil]
 
         guard AudioQueueStart(audioQueue!, nil) == noErr else {
             print("Cant start output")
@@ -141,6 +140,7 @@ class AudioPlayer {
         AudioQueueStop(audioQueue!, true)
         AudioQueueDispose(audioQueue!, true)
         audioQueue = nil
+        currentPacket = 0
         audioQueueBuffers = [nil, nil, nil, nil]
         if let audioFile = audioFile {
             AudioFileClose(audioFile)
