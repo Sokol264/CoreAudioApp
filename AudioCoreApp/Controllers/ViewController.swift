@@ -63,6 +63,7 @@ private extension ViewController {
             .store(in: &subscriptions)
         
         viewModel.$isPlaying
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] isPlaying in
                 self?.playButtonImage(for: isPlaying)
             }
