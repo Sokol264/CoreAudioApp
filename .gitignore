@@ -1,0 +1,5 @@
+
+*.xcuserstate
+*.xcbkptlist
+*/.DS_Store
+/AudioCoreApp.xcodeproj/xcuserdata

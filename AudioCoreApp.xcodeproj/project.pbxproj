@@ -358,6 +358,7 @@
 				DEVELOPMENT_TEAM = VRYNDJ8XDW;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AudioCoreApp/Info.plist;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Требуется для записи аудио";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -390,6 +391,7 @@
 				DEVELOPMENT_TEAM = VRYNDJ8XDW;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AudioCoreApp/Info.plist;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Требуется для записи аудио";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;

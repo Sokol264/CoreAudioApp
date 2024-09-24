@@ -21,22 +21,23 @@ class AudioPlayer {
     private var audioFile: AudioFileID?
 
     private var bufferSize: UInt32 = 1024
-    private var packetToRead: UInt32 = 0
     private var currentPacket: Int64 = 0
+    private var audioFormat = AudioStreamBasicDescription()
 
-    private var audioFormat: AudioStreamBasicDescription?
-    private var packetFormat = AudioStreamPacketDescription()
+    private var audioSamples: [Float] = []
 
     var handleAudioQueueOutput: AudioQueueOutputCallback = { (inUserData, inAQ, inBuffer) in
         let audioPlayer = Unmanaged<AudioPlayer>.fromOpaque(inUserData!).takeUnretainedValue()
         guard let audioFile = audioPlayer.audioFile else { return }
 
         guard audioPlayer.isPlaying else { return }
-        // Обработка входных данных
+
         var ioNumBytes: UInt32 = inBuffer.pointee.mAudioDataBytesCapacity
         var ioNumPacket: UInt32 = ioNumBytes / 2
 
-        var status = AudioFileReadPacketData(
+//        audioPlayer.countingSamples(inBuffer: inBuffer)
+
+        guard AudioFileReadPacketData(
             audioPlayer.audioFile!,
             false,
             &ioNumBytes,
@@ -44,47 +45,92 @@ class AudioPlayer {
             audioPlayer.currentPacket,
             &ioNumPacket,
             inBuffer.pointee.mAudioData
-        )
-
-        if ioNumPacket == 0 || status != noErr {
+        ) == noErr, ioNumPacket != 0 else {
             audioPlayer.stopPlaying()
             return
         }
 
         inBuffer.pointee.mAudioDataByteSize = ioNumBytes
 
-        status = AudioQueueEnqueueBuffer(inAQ, inBuffer, 0, nil)
-        guard status == noErr else {
-            print("Failed to enqueue buffer: \(status)")
+        guard AudioQueueEnqueueBuffer(inAQ, inBuffer, 0, nil) == noErr else {
+            print("Failed to enqueue buffer in output callback")
             return
         }
 
         audioPlayer.currentPacket += Int64(ioNumPacket)
     }
 
-    private func setupAudioQueue() {
+    func startPlaying(pitchValue: Float? = nil) {
+        guard !isPlaying else { return }
+        isPlaying = true
+
+        setupAudioQueue()
+
+        if let pitchValue {
+            changePitch(with: pitchValue)
+        }
+
+        guard AudioQueueStart(audioQueue!, nil) == noErr else {
+            print("Can't start output AudioQueue")
+            return
+        }
+    }
+
+    func stopPlaying() {
+        guard isPlaying else { return }
+        isPlaying = false
+
+        guard let audioQueue else {
+            print("Can't stop playing: AudioQueue is nil")
+            return
+        }
+
+        guard AudioQueueStop(audioQueue, true) == noErr else {
+            print("Can't stop output AudioQueue")
+            return
+        }
+
+        guard AudioQueueDispose(audioQueue, true) == noErr else {
+            print("Can't dispose output AudioQueue")
+            return
+        }
+
+        self.audioQueue = nil
+
+        currentPacket = 0
+        audioQueueBuffers = [nil, nil, nil]
+
+        guard let audioFile else {
+            print("Can't stop playing: AudioFile is nil")
+            return
+        }
+
+        guard AudioFileClose(audioFile) == noErr else {
+            print("Can't close file while playing")
+            return
+        }
+
+        self.audioFile = nil
+    }
+}
+
+private extension AudioPlayer {
+    func setupAudioQueue() {
         let fileURL = self.fileURL as CFURL
         guard AudioFileOpenURL(fileURL, .readPermission, 0, &audioFile) == noErr else {
-            print("Can't open file while output")
+            print("Can't open file while playing")
             return
         }
 
         var descSize: UInt32 = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
-        var dataFormat = AudioStreamBasicDescription()
-        if AudioFileGetProperty(
+
+        guard AudioFileGetProperty(
             audioFile!,
             kAudioFilePropertyDataFormat,
             &descSize,
-            &dataFormat
-        ) == noErr {
-            audioFormat = dataFormat
-        } else {
-            print("Can't AudioFileGetProperty while output")
-            return
-        }
-
-        guard var audioFormat = audioFormat else {
-            print("No audio formatt while output")
+            &audioFormat
+        ) == noErr else {
+            print("Can't get audio format while playing")
             return
         }
 
@@ -109,7 +155,7 @@ class AudioPlayer {
                 bufferSize,
                 &audioQueueBuffers[i]
             ) == noErr else {
-                print("Failed allocate buffer")
+                print("Failed allocate buffer while playing")
                 return
             }
 
@@ -117,34 +163,35 @@ class AudioPlayer {
                 handleAudioQueueOutput(userData, audioQueue!, buffer)
             }
         }
-
-        AudioQueueSetParameter(audioQueue!, kAudioQueueParam_Volume, 1.0)
     }
 
-    func startPlaying() {
-        if isPlaying { return }
-        isPlaying = true
-        setupAudioQueue()
+    func countingSamples(inBuffer: AudioQueueBufferRef) {
+        let audioData = inBuffer.pointee.mAudioData.assumingMemoryBound(to: Int16.self)
+        let frameCount = inBuffer.pointee.mAudioDataByteSize / 2
 
-        guard AudioQueueStart(audioQueue!, nil) == noErr else {
-            print("Cant start output")
-            return
+        var amplitudeSum: Float = 0
+
+        for frame in 0..<Int(frameCount) {
+            let sampleValue = Float(audioData[frame]) / Float(Int16.max)
+            amplitudeSum += sampleValue
         }
+
+        audioSamples.append(amplitudeSum)
     }
 
-    func stopPlaying() {
-        print("stop")
-        if !isPlaying { return }
-        isPlaying = false
+    func changePitch(with value: Float) {
+        var enable: UInt32 = 1
+        AudioQueueSetProperty(
+            audioQueue!,
+            kAudioQueueProperty_EnableTimePitch,
+            &enable,
+            UInt32(MemoryLayout<UInt32>.size)
+        )
 
-        AudioQueueStop(audioQueue!, true)
-        AudioQueueDispose(audioQueue!, true)
-        audioQueue = nil
-        currentPacket = 0
-        audioQueueBuffers = [nil, nil, nil, nil]
-        if let audioFile = audioFile {
-            AudioFileClose(audioFile)
-        }
-        audioFile = nil
+        AudioQueueSetParameter(
+            audioQueue!,
+            kAudioQueueParam_Pitch,
+            value
+        )
     }
 }
