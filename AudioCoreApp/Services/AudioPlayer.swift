@@ -24,8 +24,6 @@ class AudioPlayer {
     private var currentPacket: Int64 = 0
     private var audioFormat = AudioStreamBasicDescription()
 
-    private var audioSamples: [Float] = []
-
     var handleAudioQueueOutput: AudioQueueOutputCallback = { (inUserData, inAQ, inBuffer) in
         let audioPlayer = Unmanaged<AudioPlayer>.fromOpaque(inUserData!).takeUnretainedValue()
         guard let audioFile = audioPlayer.audioFile else { return }
@@ -34,8 +32,6 @@ class AudioPlayer {
 
         var ioNumBytes: UInt32 = inBuffer.pointee.mAudioDataBytesCapacity
         var ioNumPacket: UInt32 = ioNumBytes / 2
-
-//        audioPlayer.countingSamples(inBuffer: inBuffer)
 
         guard AudioFileReadPacketData(
             audioPlayer.audioFile!,
@@ -163,20 +159,6 @@ private extension AudioPlayer {
                 handleAudioQueueOutput(userData, audioQueue!, buffer)
             }
         }
-    }
-
-    func countingSamples(inBuffer: AudioQueueBufferRef) {
-        let audioData = inBuffer.pointee.mAudioData.assumingMemoryBound(to: Int16.self)
-        let frameCount = inBuffer.pointee.mAudioDataByteSize / 2
-
-        var amplitudeSum: Float = 0
-
-        for frame in 0..<Int(frameCount) {
-            let sampleValue = Float(audioData[frame]) / Float(Int16.max)
-            amplitudeSum += sampleValue
-        }
-
-        audioSamples.append(amplitudeSum)
     }
 
     func changePitch(with value: Float) {

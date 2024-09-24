@@ -10,6 +10,8 @@ import AudioToolbox
 class AudioRecorder {
     @Published var isRecording = false
 
+    private(set) var audioSamples: [Float] = []
+
     private let fileURL: URL = {
         let fileManager = FileManager.default
         let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -43,6 +45,8 @@ class AudioRecorder {
         guard let audioFile = audioRecorder.audioFile else { return }
 
         var ioNumBytes = inBuffer.pointee.mAudioDataBytesCapacity
+
+        audioRecorder.countingSamples(inBuffer: inBuffer)
 
         guard AudioFileWriteBytes(
             audioFile,
@@ -162,5 +166,19 @@ private extension AudioRecorder {
                 }
             }
         }
+    }
+
+    func countingSamples(inBuffer: AudioQueueBufferRef) {
+        let audioData = inBuffer.pointee.mAudioData.assumingMemoryBound(to: Int16.self)
+        let frameCount = inBuffer.pointee.mAudioDataByteSize / 2
+
+        var amplitudeSum: Float = 0
+
+        for frame in 0..<Int(frameCount) {
+            let sampleValue = Float(audioData[frame]) / Float(Int16.max)
+            amplitudeSum += sampleValue
+        }
+
+        audioSamples.append(amplitudeSum)
     }
 }
