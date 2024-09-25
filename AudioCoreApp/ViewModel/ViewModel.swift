@@ -7,8 +7,14 @@
 
 import Combine
 import Foundation
+import AVFAudio
 
 final class ViewModel {
+    enum PitchLevel {
+        case high
+        case low
+    }
+
     @Published var isRecording: Bool = false
     @Published var isPlaying: Bool = false
     @Published var isHighPitchPlaying: Bool = false
@@ -17,6 +23,7 @@ final class ViewModel {
     private let audioRecorder = AudioRecorder()
     private let audioPlayer = AudioPlayer()
     private let pdfManager = PDFManager()
+    private let audioSessionManager = AudioManager()
 
     private var playingSubscription: AnyCancellable?
 
@@ -29,45 +36,41 @@ final class ViewModel {
 extension ViewModel {
     func recordButtonTapped() {
         if !isRecording {
+            audioSessionManager.startRecording()
             audioRecorder.startRecording()
         } else {
+            audioSessionManager.stopRecording()
             audioRecorder.stopRecording()
         }
     }
 
-    func playButtonTapped(with pitchLevel: AudioManager.PitchLevel? = nil) {
+    func playButtonTapped(with pitchLevel: PitchLevel? = nil) {
+        audioSessionManager.startPlaying()
         observePlaying(with: pitchLevel)
 
-        switch pitchLevel {
-        case .high:
-            if !isHighPitchPlaying {
+        if isHighPitchPlaying || isLowPitchPlaying || isPlaying {
+            audioPlayer.stopPlaying()
+            audioSessionManager.stopPlaying()
+        } else {
+            switch pitchLevel {
+            case .high:
                 audioPlayer.startPlaying(pitchValue: 600.0)
-            } else {
-                audioPlayer.stopPlaying()
-            }
-        case .low:
-            if !isLowPitchPlaying {
+            case .low:
                 audioPlayer.startPlaying(pitchValue: -600.0)
-            } else {
-                audioPlayer.stopPlaying()
-            }
-        case .none:
-            if !isPlaying {
+            case .none:
                 audioPlayer.startPlaying()
-            } else {
-                audioPlayer.stopPlaying()
             }
         }
     }
 
     func pdfPreviewTapped() -> Data {
-        pdfManager.createFlyer()
+        pdfManager.createGraphDocumentData(with: audioRecorder.audioSamples)
     }
 }
 
 // MARK: Helper methods
 private extension ViewModel {
-    func observePlaying(with level: AudioManager.PitchLevel? = nil) {
+    func observePlaying(with level: PitchLevel? = nil) {
         if playingSubscription == nil {
             playingSubscription?.cancel()
             playingSubscription = nil

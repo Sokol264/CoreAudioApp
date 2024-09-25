@@ -9,12 +9,14 @@ import UIKit
 import PDFKit
 
 class PDFPreviewController: UIViewController {
-//    private var pdfPreview = PDFView()
-    private var pdfPreview = GraphDrawerView()
+    private var pdfPreview = PDFView()
     
     init(document: PDFDocument) {
         super.init(nibName: nil, bundle: nil)
-        pdfPreview.dataPoints = [10, 30, 20, 40, 25, 60, 35]
+        pdfPreview.document = document
+        pdfPreview.autoScales = true
+        pdfPreview.maxScaleFactor = 4.0
+        pdfPreview.minScaleFactor = pdfPreview.scaleFactorForSizeToFit
     }
 
     required init?(coder: NSCoder) {
@@ -34,10 +36,9 @@ private extension PDFPreviewController {
         pdfPreview.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             pdfPreview.topAnchor.constraint(equalTo: view.topAnchor),
-//            pdfPreview.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            pdfPreview.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             pdfPreview.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             pdfPreview.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            pdfPreview.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.2)
         ])
     }
 }

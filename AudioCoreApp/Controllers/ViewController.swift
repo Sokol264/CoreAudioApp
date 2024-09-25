@@ -270,12 +270,12 @@ private extension ViewController {
     }
 
     @objc func PDFTapped() {
-//        let data = viewModel.pdfPreviewTapped()
-//        guard let doc = PDFDocument(data: data) else {
-//            return
-//        }
+        let data = viewModel.pdfPreviewTapped()
+        guard let doc = PDFDocument(data: data) else {
+            return
+        }
 
-//        let preview = PDFPreviewController(array: viewModel.audioPlayer.audioSamples)
-//        present(preview, animated: true)
+        let preview = PDFPreviewController(document: doc)
+        present(preview, animated: true)
     }
 }
