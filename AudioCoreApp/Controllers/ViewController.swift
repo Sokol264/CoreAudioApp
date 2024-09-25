@@ -40,6 +40,7 @@ private extension ViewController {
         constraintsSettings()
         observeRecord()
         observePlaying()
+        observeSessionPermission()
     }
 
     func addSubviews() {
@@ -96,6 +97,15 @@ private extension ViewController {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] isPlaying in
                 self?.playingLowPitchStateChangeHandler(isPlaying: isPlaying)
+            }
+            .store(in: &subscriptions)
+    }
+
+    func observeSessionPermission() {
+        viewModel.$isEnable
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isEnable in
+                self?.enableButtonsExept(buttons: [], isEnable)
             }
             .store(in: &subscriptions)
     }

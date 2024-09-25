@@ -24,6 +24,8 @@ final class ViewModel {
     @Published var isHighPitchPlaying: Bool = false
     @Published var isLowPitchPlaying: Bool = false
 
+    @Published var isEnable: Bool = false
+
     private let audioRecorder = AudioRecorder()
     private let audioPlayer = AudioPlayer()
     private let pdfManager = PDFManager()
@@ -32,6 +34,9 @@ final class ViewModel {
     private var playingSubscription: AnyCancellable?
 
     init() {
+        audioSessionManager.requestAccess { [weak self] result in
+            self?.isEnable = result
+        }
         observeRecording()
     }
 }

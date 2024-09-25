@@ -65,8 +65,13 @@ class AudioPlayer {
         if let pitchValue {
             changePitch(with: pitchValue)
         }
+        
+        guard let audioQueue else {
+            print("Failed: AudioQueue is nil after creation")
+            return
+        }
 
-        guard AudioQueueStart(audioQueue!, nil) == noErr else {
+        guard AudioQueueStart(audioQueue, nil) == noErr else {
             print("Can't start output AudioQueue")
             return
         }
@@ -145,9 +150,14 @@ private extension AudioPlayer {
             return
         }
 
+        guard let audioQueue else {
+            print("Failed: AudioQueue is nil after creation")
+            return
+        }
+
         for i in 0..<audioQueueBuffers.count {
             guard AudioQueueAllocateBuffer(
-                audioQueue!,
+                audioQueue,
                 bufferSize,
                 &audioQueueBuffers[i]
             ) == noErr else {
@@ -156,22 +166,27 @@ private extension AudioPlayer {
             }
 
             if let buffer = audioQueueBuffers[i] {
-                handleAudioQueueOutput(userData, audioQueue!, buffer)
+                handleAudioQueueOutput(userData, audioQueue, buffer)
             }
         }
     }
 
     func changePitch(with value: Float) {
+        guard let audioQueue else {
+            print("Failed: AudioQueue is nil after creation")
+            return
+        }
+
         var enable: UInt32 = 1
         AudioQueueSetProperty(
-            audioQueue!,
+            audioQueue,
             kAudioQueueProperty_EnableTimePitch,
             &enable,
             UInt32(MemoryLayout<UInt32>.size)
         )
 
         AudioQueueSetParameter(
-            audioQueue!,
+            audioQueue,
             kAudioQueueParam_Pitch,
             value
         )

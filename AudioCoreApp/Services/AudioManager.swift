@@ -10,14 +10,14 @@ import AVFoundation
 final class AudioManager: NSObject {
     var audioSession = AVAudioSession.sharedInstance()
 
-    func requestAccess() {
+    func requestAccess(completion: @escaping (Bool) -> ()) {
         if #available(iOS 17.0, *) {
             AVAudioApplication.requestRecordPermission { result in
-                print("Permission result - \(result)")
+                completion(result)
             }
         } else {
             audioSession.requestRecordPermission { result in
-                print("Permission result - \(result)")
+                completion(result)
             }
         }
     }
