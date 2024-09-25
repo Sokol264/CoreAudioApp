@@ -271,7 +271,7 @@ private extension ViewController {
 
     @objc func PDFTapped() {
         let data = viewModel.pdfPreviewTapped()
-        guard let doc = PDFDocument(data: data) else {
+        guard let data, let doc = PDFDocument(data: data) else {
             return
         }
 

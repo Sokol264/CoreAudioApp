@@ -24,7 +24,7 @@ final class PDFManager {
 
     private let graphDrawer = GraphDrawer()
 
-    func createGraphDocumentData(with points: [Float]) -> Data {
+    func createGraphDocumentData(with points: [[Float]]) -> Data {
         let pdfMetaData = [
             kCGPDFContextCreator: "Audio Recorder / Player",
             kCGPDFContextAuthor: "sokol264.com"
@@ -42,12 +42,17 @@ final class PDFManager {
             let attributes = getTitleAttribute()
 
             let text = "Модальная амплитуда аудио:"
-            let textRect = CGRect(x: 0.0, y: Constants.spacing, width: Constants.pageWidth, height: Constants.titleHeight)
+            let textRect = CGRect(
+                x: 0.0,
+                y: Constants.spacing,
+                width: Constants.pageWidth,
+                height: Constants.titleHeight
+            )
 
             text.draw(in: textRect, withAttributes: attributes)
 
             drawGraphics(
-                with: [points, points, points, points, points, points],
+                with: points,
                 in: context,
                 offset: graphOffset
             )

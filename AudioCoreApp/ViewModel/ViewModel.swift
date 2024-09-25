@@ -10,6 +10,10 @@ import Foundation
 import AVFAudio
 
 final class ViewModel {
+    private enum Constants {
+        static let secondsInGraphic: Float = 10
+    }
+
     enum PitchLevel {
         case high
         case low
@@ -63,8 +67,14 @@ extension ViewModel {
         }
     }
 
-    func pdfPreviewTapped() -> Data {
-        pdfManager.createGraphDocumentData(with: audioRecorder.audioSamples)
+    func pdfPreviewTapped() -> Data? {
+        guard let duration = audioRecorder.duration, duration != 0 else {
+            return nil
+        }
+
+        let result = splitAmplitudes(duration)
+
+        return pdfManager.createGraphDocumentData(with: result)
     }
 }
 
@@ -97,5 +107,24 @@ private extension ViewModel {
     func observeRecording() {
         audioRecorder.$isRecording
             .assign(to: &$isRecording)
+    }
+
+    func splitAmplitudes(_ duration: Float) -> [[Float]] {
+        var result = [[Float]]()
+
+        let amplitudes = audioRecorder.audioAmplitudes
+        let amplitudesPerGraphic = Float(amplitudes.count) * Constants.secondsInGraphic / duration
+
+        var size = 0
+        while size + Int(amplitudesPerGraphic) < amplitudes.count {
+            result.append(Array(amplitudes[size..<size + Int(amplitudesPerGraphic)]))
+            size += Int(amplitudesPerGraphic)
+        }
+
+        if size < amplitudes.count {
+            result.append(Array(amplitudes[size..<amplitudes.count - 1]))
+        }
+
+        return result
     }
 }

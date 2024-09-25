@@ -10,7 +10,8 @@ import AudioToolbox
 class AudioRecorder {
     @Published var isRecording = false
 
-    private(set) var audioSamples: [Float] = []
+    private(set) var audioAmplitudes: [Float] = []
+    private(set) var duration: Float?
 
     private let fileURL: URL = {
         let fileManager = FileManager.default
@@ -46,7 +47,7 @@ class AudioRecorder {
 
         var ioNumBytes = inBuffer.pointee.mAudioDataBytesCapacity
 
-        audioRecorder.countingSamples(inBuffer: inBuffer)
+        audioRecorder.countingAmplitudes(inBuffer: inBuffer)
 
         guard AudioFileWriteBytes(
             audioFile,
@@ -85,6 +86,14 @@ extension AudioRecorder {
         guard let audioQueue else {
             print("Can't stop recording: AudioQueue is nil")
             return
+        }
+
+        var timeLine: AudioQueueTimelineRef?
+        if AudioQueueCreateTimeline(audioQueue, &timeLine) == noErr {
+
+            var timeStamp = AudioTimeStamp()
+            AudioQueueGetCurrentTime(audioQueue, timeLine, &timeStamp, nil);
+            duration = Float(timeStamp.mSampleTime) / Float(audioFormat.mSampleRate)
         }
 
         guard AudioQueueStop(audioQueue, true) == noErr else {
@@ -168,7 +177,7 @@ private extension AudioRecorder {
         }
     }
 
-    func countingSamples(inBuffer: AudioQueueBufferRef) {
+    func countingAmplitudes(inBuffer: AudioQueueBufferRef) {
         let audioData = inBuffer.pointee.mAudioData.assumingMemoryBound(to: Int16.self)
         let frameCount = inBuffer.pointee.mAudioDataByteSize / 2
 
@@ -179,6 +188,6 @@ private extension AudioRecorder {
             amplitudeSum += sampleValue
         }
 
-        audioSamples.append(amplitudeSum)
+        audioAmplitudes.append(amplitudeSum)
     }
 }
